@@ -12,7 +12,7 @@ public class ImageController {
 
 
 
-    @GetMapping("/chapters")
+    @GetMapping("/image")
 
     public Flux<Image> images(){
         return imageRepository.findAll();
