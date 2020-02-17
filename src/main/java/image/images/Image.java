@@ -9,7 +9,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document
-public class Chapter {
+public class Image {
     private String id;
     private String name;
+
+
 }
