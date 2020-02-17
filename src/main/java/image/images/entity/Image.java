@@ -1,4 +1,4 @@
-package image.images;
+package image.images.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
