@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HomeController {
 
     @GetMapping
-    public String greeting(@RequestParam(required = false,value = "") String name){
+    public String greeting(@RequestParam(required = false,defaultValue = "") String name){
      return name.equalsIgnoreCase("")?"hey" :"hey " +name + "!";
     }
 }
