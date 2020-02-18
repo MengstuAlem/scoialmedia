@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
-@RestController
+
 @AllArgsConstructor
 public class ImageController {
     private ImageRepository imageRepository;
