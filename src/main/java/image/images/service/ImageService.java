@@ -53,7 +53,7 @@ public class ImageService {
                             throw new RuntimeException(e);
                         }
                         return file;
-                    }).log("created new file")
+                    })
                             .flatMap(filePart::transferTo);
                     return Mono.when(saveData,copyFile);
                 })
