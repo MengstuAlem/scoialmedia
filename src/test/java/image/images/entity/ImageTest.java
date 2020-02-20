@@ -9,7 +9,7 @@ class ImageTest {
 
     @Test
 
-    public void createImage(){
+    public void createImageByLombokShouldWork(){
         Image image = new Image("1","introduction to java");
         assertThat(image.getId()).isEqualTo("1");
         assertThat(image.getName()).isEqualTo("introduction to java");
