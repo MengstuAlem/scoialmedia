@@ -2,8 +2,8 @@ package image.images.service;
 
 import image.images.entity.Image;
 import image.images.repository.ImageRepository;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.AllArgsConstructor;
-import org.reactivestreams.Publisher;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.Resource;
@@ -14,18 +14,14 @@ import org.springframework.util.FileCopyUtils;
 import org.springframework.util.FileSystemUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.function.Supplier;
+
 
 @AllArgsConstructor
 @Service
@@ -33,6 +29,7 @@ public class ImageService {
     private final static String UPLOAD_URL="upload-dir";
     private final ResourceLoader resourceLoader;
     private final ImageRepository imageRepository;
+
 
     public Flux<Image> findAllImages(){
         return imageRepository.findAll();
@@ -45,7 +42,9 @@ public class ImageService {
     public Mono<Void> createImage(Flux<FilePart> files){
         return files
                 .flatMap(filePart -> {
-                    Mono<Image> saveData = imageRepository.save(new Image(UUID.randomUUID().toString(), filePart.filename()));
+                    Mono<Image> saveData=    imageRepository.findByName(filePart.filename())
+                            .defaultIfEmpty(new Image(UUID.randomUUID().toString(), filePart.filename()))
+                            .flatMap((Function<Image, Mono<Image>>) image -> imageRepository.save(image));
                     Mono<Void> copyFile = Mono.just(Paths.get(UPLOAD_URL,filePart.filename()).toFile()).map(file -> {
                         try {
                             file.createNewFile();
@@ -55,6 +54,7 @@ public class ImageService {
                         return file;
                     })
                             .flatMap(filePart::transferTo);
+
                     return Mono.when(saveData,copyFile);
                 })
                 .then();
@@ -62,7 +62,7 @@ public class ImageService {
 
     public Mono<Void> deleteImage(String fileName){
         Mono<Void> deleteFromDataBase = imageRepository.findByName(fileName).
-                flatMap(imageRepository::delete);
+                flatMap(image -> imageRepository.deleteById(image.getId()));
         Mono<Void> deletFile = Mono.fromRunnable(() -> {
             try {
                 Files.deleteIfExists(Paths.get(UPLOAD_URL, fileName));
