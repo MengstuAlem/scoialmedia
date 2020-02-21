@@ -9,9 +9,17 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -25,6 +33,8 @@ class HomeControllerTest {
     private WebTestClient webTestClient;
     @InjectMocks
     private HomeController homeController;
+    @MockBean
+    private Resource resource;
 
     @BeforeEach
     public void setUp(){
@@ -43,9 +53,52 @@ class HomeControllerTest {
                 .expectBody(String.class)
                 .returnResult();
 
-        assertThat(result.getResponseBody()).contains("href=\"/images/java/raw").contains("href=\"/images/kotlin/raw\"");
+        assertThat(result.getResponseBody())
+                .contains("href=\"/images/java/raw")
+                .contains("href=\"/images/kotlin/raw\"");
 
         verify(imageService,times(1)).findAllImages();
+    }
+
+
+    @Test
+    public void fetchingImageShouldWork(){
+        when(imageService.findOneImage(any())).thenReturn(Mono.just(new ByteArrayResource("data".getBytes())));
+
+        webTestClient.get().uri("/images/alpha.png/raw")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(String.class).isEqualTo("data");
+        verify(imageService).findOneImage("alpha.png");
+        verifyNoMoreInteractions(imageService);
+    }
+
+
+    @Test
+    public void fetchingNotExistImageThrowException() throws IOException {
+        when(resource.getInputStream()).thenThrow(new IOException(" bad file"));
+        when(imageService.findOneImage(any())).thenReturn(Mono.just(resource));
+
+        webTestClient.get().uri("/images/alpha.png/raw")
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody(String.class)
+                .isEqualTo("could findalpha.png bad file");
+        verify(imageService,times(1)).findOneImage("alpha.png");
+    }
+
+    @Test
+    public void deleteImageshouldWork(){
+        when(imageService.deleteImage("alpha.png")).thenReturn(Mono.empty());
+
+        webTestClient.delete().uri("/images/alpha.png/")
+                .exchange()
+                .expectStatus().isSeeOther()
+                .expectHeader()
+                .valueEquals(HttpHeaders.LOCATION,"/");
+        verify(imageService,times(1)).deleteImage("alpha.png");
     }
 
 
