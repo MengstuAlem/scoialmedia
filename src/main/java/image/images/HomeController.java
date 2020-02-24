@@ -1,9 +1,9 @@
 package image.images;
 
+import image.images.Comments.CommentReaderRepository;
 import image.images.service.ImageService;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
@@ -13,9 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import javax.validation.executable.ValidateOnExecution;
 import java.io.IOException;
-import java.util.function.Function;
+import java.util.HashMap;
 
 @AllArgsConstructor
 @Controller
@@ -23,8 +22,9 @@ public class HomeController {
     private static final  String BASE_PATH="/images";
     private static final  String FILENAME="{filename:.+}";
     private ImageService imageService;
+    private	final CommentReaderRepository repository;
 
-   @GetMapping(value = BASE_PATH +"/"+FILENAME +"/raw",produces = MediaType.IMAGE_JPEG_VALUE)
+    @GetMapping(value = BASE_PATH +"/"+FILENAME +"/raw",produces = MediaType.IMAGE_JPEG_VALUE)
     @ResponseBody
     public Mono<ResponseEntity<?>> oneRawImage(@PathVariable String filename){
        return imageService.findOneImage(filename).map(resource -> {
@@ -50,7 +50,16 @@ public class HomeController {
 
    @GetMapping("/")
        public Mono<String> index(Model model) throws IOException {
-       model.addAttribute("images",imageService.findAllImages());
+       model.addAttribute("images",imageService.findAllImages().flatMap(
+               image -> Mono.just(image).zipWith(repository.findByImageId(image.getId()).collectList()))
+               .map(imageAndComments	->	new	HashMap<String,	Object>(){{
+                   put("id",imageAndComments.getT1().getId());
+                   put("name",imageAndComments.getT1().getName());
+                   put("comments",imageAndComments.getT2());
+               }})
+
+
+       );
        return Mono.just("index");
        }
 }

@@ -1,5 +1,6 @@
 package image.images;
 
+import image.images.Comments.CommentReaderRepository;
 import image.images.entity.Image;
 import image.images.service.ImageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,9 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.server.reactive.HttpHandler;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Flux;
@@ -29,6 +28,8 @@ import static org.mockito.Mockito.*;
 class HomeControllerTest {
     @MockBean
     private ImageService imageService;
+    @MockBean
+    private	 CommentReaderRepository repository;
     @Autowired
     private WebTestClient webTestClient;
     @InjectMocks
@@ -38,7 +39,7 @@ class HomeControllerTest {
 
     @BeforeEach
     public void setUp(){
-        homeController=new HomeController(imageService);
+        homeController=new HomeController(imageService,repository);
         MockitoAnnotations.initMocks(this);
     }
 
